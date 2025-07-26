@@ -1,0 +1,29 @@
+#server
+mkdir server && cd server
+npm init -y
+npm install express mongoose cors dotenv
+sudo npm install -g nodemon
+
+#client
+npx create-react-app client
+cd client
+npm install axios react-beautiful-dnd tailwindcss
+npm install react@18 react-dom@18
+npm install react-beautiful-dnd
+
+#mongodb
+curl -fsSL https://pgp.mongodb.com/server-6.0.asc | \
+sudo gpg -o /usr/share/keyrings/mongodb-server-6.0.gpg \
+--dearmor
+echo "deb [ signed-by=/usr/share/keyrings/mongodb-server-6.0.gpg ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/6.0 multiverse" | \
+sudo tee /etc/apt/sources.list.d/mongodb-org-6.0.list
+sudo systemctl start mongod
+sudo systemctl enable mongod
+
+
+run mongodb shell, insert:
+mongosh
+use trello_clone
+db.boards.insertOne({ title: "Test Board" })
+db.boards.find().pretty()
+
