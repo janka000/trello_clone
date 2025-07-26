@@ -24,5 +24,8 @@ const cardRoutes = require('./routes/cards');
 app.use('/api/lists', listRoutes);
 app.use('/api/cards', cardRoutes);
 
+app.use("/api/cardinfos", require("./routes/cardInfos"));
+
+
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

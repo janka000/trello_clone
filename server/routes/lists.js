@@ -21,4 +21,15 @@ router.post('/', async (req, res) => {
   }
 });
 
+// GET /api/lists - get all lists
+router.get('/', async (req, res) => {
+  try {
+    const lists = await List.find(); // fetch all lists
+    res.json(lists);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 module.exports = router;
