@@ -26,4 +26,17 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+// PUT to update board title
+router.put("/:id", async (req, res) => {
+  const { id } = req.params;
+  const { title } = req.body;
+
+  try {
+    const updated = await Board.findByIdAndUpdate(id, { title }, { new: true });
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to update board title" });
+  }
+});
+
 module.exports = router;

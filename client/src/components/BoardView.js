@@ -14,9 +14,14 @@ export default function BoardView({ boardId }) {
   const [selectedCard, setSelectedCard] = useState(null);
   const [cardDescription, setCardDescription] = useState("");
 
-  useEffect(() => {
-    axios.get(`/api/boards/${boardId}`).then((res) => setBoard(res.data));
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editedTitle, setEditedTitle] = useState("");
 
+  useEffect(() => {
+    axios.get(`/api/boards/${boardId}`).then((res) => {
+      setBoard(res.data);
+      setEditedTitle(res.data.title); // Initialize editable title
+    });
     axios.get(`/api/lists/${boardId}`).then((res) => {
       setLists(res.data);
       res.data.forEach((list) => {
@@ -94,11 +99,52 @@ export default function BoardView({ boardId }) {
     setCardDescription("");
   };
 
+   // Update board title on Enter
+  const handleBoardTitleKeyDown = async (e) => {
+    console.log("Key pressed:", e.key);
+    if (e.key === "Enter") {
+      try {
+        const res = await axios.put(`api/boards/${boardId}`, {
+          title: editedTitle.trim(),
+        });
+        setBoard(res.data);
+        setIsEditingTitle(false);
+      } catch (err) {
+        console.error("Error updating board title", err);
+      }
+    }
+  };
+
+
   if (!board) return <p>Loading board...</p>;
 
   return (
     <div style={{ padding: "20px" }}>
-      <h1>{board.title}</h1>
+      {/* Title area */}
+      {isEditingTitle ? (
+        <input
+          autoFocus
+          type="text"
+          value={editedTitle}
+          onChange={(e) => setEditedTitle(e.target.value)}
+          onKeyDown={handleBoardTitleKeyDown}
+          onBlur={() => setIsEditingTitle(false)} // optional: exit on blur
+          style={{
+            fontSize: "2rem",
+            fontWeight: "bold",
+            padding: "5px",
+            width: "100%",
+            maxWidth: "500px",
+          }}
+        />
+      ) : (
+        <h1
+          onClick={() => setIsEditingTitle(true)}
+          style={{ cursor: "pointer" }}
+        >
+          {board.title}
+        </h1>
+      )}
 
       <div
         className="scroll-container"
