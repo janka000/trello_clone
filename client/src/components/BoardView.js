@@ -17,6 +17,11 @@ export default function BoardView({ boardId }) {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editedTitle, setEditedTitle] = useState("");
 
+  const [editingListId, setEditingListId] = useState(null);
+  const [editedListTitle, setEditedListTitle] = useState("");
+
+
+
   useEffect(() => {
     axios.get(`/api/boards/${boardId}`).then((res) => {
       setBoard(res.data);
@@ -31,6 +36,23 @@ export default function BoardView({ boardId }) {
       });
     });
   }, [boardId]);
+
+
+  const handleListTitleUpdate = async (listId, newTitle) => {
+    try {
+        await axios.put(`/api/lists/${listId}`, {
+        title: newTitle,
+        });
+        setLists((prev) =>
+        prev.map((list) =>
+            list._id === listId ? { ...list, title: newTitle } : list
+        )
+        );
+    } catch (err) {
+        console.error("Error updating list title:", err);
+    }
+    };
+
 
   const handleAddList = async () => {
     if (!newListTitle.trim()) return;
@@ -177,6 +199,7 @@ export default function BoardView({ boardId }) {
               }
               onAddCard={() => handleAddCard(list._id)}
               onCardClick={handleCardClick}
+              onTitleUpdate={handleListTitleUpdate}
             />
           ))}
 

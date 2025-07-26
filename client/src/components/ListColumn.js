@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 
 export default function ListColumn({
   list,
@@ -6,8 +6,21 @@ export default function ListColumn({
   newCardTitle,
   onCardTitleChange,
   onAddCard,
-  onCardClick
+  onCardClick,
+  onTitleUpdate, // <-- new prop for updating list title
 }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedTitle, setEditedTitle] = useState(list.title);
+
+  const handleTitleSubmit = (e) => {
+    if (e.key === "Enter") {
+      setIsEditing(false);
+      if (editedTitle.trim() && editedTitle !== list.title) {
+        onTitleUpdate(list._id, editedTitle.trim());
+      }
+    }
+  };
+
   return (
     <div
       style={{
@@ -21,7 +34,24 @@ export default function ListColumn({
         maxHeight: "300px",
       }}
     >
-      <h3>{list.title}</h3>
+      {isEditing ? (
+        <input
+          type="text"
+          value={editedTitle}
+          onChange={(e) => setEditedTitle(e.target.value)}
+          onKeyDown={handleTitleSubmit}
+          onBlur={() => setIsEditing(false)}
+          autoFocus
+          style={{ marginBottom: "10px", padding: "4px", width: "100%" }}
+        />
+      ) : (
+        <h3
+          onClick={() => setIsEditing(true)}
+          style={{ cursor: "pointer", marginBottom: "10px" }}
+        >
+          {list.title}
+        </h3>
+      )}
 
       <div
         className="scrollable-list"
@@ -34,18 +64,18 @@ export default function ListColumn({
         {cards ? (
           cards.map((card) => (
             <div
-                key={card._id}
-                onClick={() => onCardClick(card)}
-                style={{
-                    background: "white",
-                    borderRadius: "3px",
-                    padding: "8px",
-                    marginBottom: "8px",
-                    boxShadow: "0 1px 0 rgba(9,30,66,.25)",
-                    cursor: "pointer",
-                }}
-                >
-                {card.title}
+              key={card._id}
+              onClick={() => onCardClick(card)}
+              style={{
+                background: "white",
+                borderRadius: "3px",
+                padding: "8px",
+                marginBottom: "8px",
+                boxShadow: "0 1px 0 rgba(9,30,66,.25)",
+                cursor: "pointer",
+              }}
+            >
+              {card.title}
             </div>
           ))
         ) : (

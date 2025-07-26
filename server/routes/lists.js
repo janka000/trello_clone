@@ -32,4 +32,18 @@ router.get('/', async (req, res) => {
   }
 });
 
+// PUT to update list title
+router.put('/:id', async (req, res) => {
+  const { id } = req.params;
+  const { title } = req.body;
+    try {
+        const updatedList = await List.findByIdAndUpdate(id, { title }, { new: true });
+        if (!updatedList) return res.status(404).json({ message: 'List not found' });
+        res.json(updatedList);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to update list title' });
+    }
+});
+
+
 module.exports = router;
