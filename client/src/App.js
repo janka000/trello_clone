@@ -6,7 +6,6 @@ function App() {
 
   return (
     <div>
-      <h1>My Trello Clone</h1>
       <BoardView boardId={boardId} />
     </div>
   );

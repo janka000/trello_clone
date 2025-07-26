@@ -1,0 +1,26 @@
+.scroll-container::-webkit-scrollbar,
+.scrollable-list::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.scroll-container::-webkit-scrollbar-thumb,
+.scrollable-list::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+}
+
+.scroll-container,
+.scrollable-list {
+  scrollbar-width: none; /* Firefox */
+}
+
+.scroll-container:hover,
+.scrollable-list:hover {
+  scrollbar-width: thin;
+}
+
+.scroll-container:not(:hover)::-webkit-scrollbar,
+.scrollable-list:not(:hover)::-webkit-scrollbar {
+  display: none;
+}

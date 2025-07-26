@@ -80,111 +80,123 @@ return (
     <h1>{board.title}</h1>
 
     <div
+      className="scroll-container"
       style={{
-        display: "flex",
-        gap: "20px",
-        marginTop: "20px",
         overflowX: "auto",
-        flexWrap: "nowrap",
-        paddingBottom: "10px",
+        marginTop: "20px",
+        padding: "10px",
       }}
     >
-      {lists.map((list) => (
+      <div
+        style={{
+          display: "flex",
+          gap: "20px",
+          flexWrap: "nowrap",
+          minHeight: "400px",
+        }}
+      >
+        {lists.map((list) => (
+          <div
+            key={list._id}
+            style={{
+              background: "#f4f5f7",
+              borderRadius: "5px",
+              width: "250px",
+              padding: "10px",
+              flex: "0 0 auto",
+              display: "flex",
+              flexDirection: "column",
+              maxHeight: "300px",
+            }}
+          >
+            <h3>{list.title}</h3>
+
+            <div
+              className="scrollable-list"
+              style={{
+                flexGrow: 1,
+                overflowY: "auto",
+                marginBottom: "10px",
+              }}
+            >
+              {cards[list._id] ? (
+                cards[list._id].map((card) => (
+                  <div
+                    key={card._id}
+                    style={{
+                      background: "white",
+                      borderRadius: "3px",
+                      padding: "8px",
+                      marginBottom: "8px",
+                      boxShadow: "0 1px 0 rgba(9,30,66,.25)",
+                    }}
+                  >
+                    {card.title}
+                  </div>
+                ))
+              ) : (
+                <p>Loading cards...</p>
+              )}
+            </div>
+
+            <input
+              type="text"
+              placeholder="New card title"
+              value={newCardTitles[list._id] || ""}
+              onChange={(e) =>
+                setNewCardTitles((prev) => ({
+                  ...prev,
+                  [list._id]: e.target.value,
+                }))
+              }
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  handleAddCard(list._id);
+                }
+              }}
+              style={{
+                width: "100%",
+                padding: "5px",
+                boxSizing: "border-box",
+              }}
+            />
+          </div>
+        ))}
+
+        {/* Add New List */}
         <div
-          key={list._id}
           style={{
-            background: "#f4f5f7",
+            background: "#ebecf0",
             borderRadius: "5px",
             width: "250px",
             padding: "10px",
             flex: "0 0 auto",
             display: "flex",
             flexDirection: "column",
+            maxHeight: "500px",
           }}
         >
-          <h3>{list.title}</h3>
-
-          <div style={{ flexGrow: 1 }}>
-            {cards[list._id] ? (
-              cards[list._id].map((card) => (
-                <div
-                  key={card._id}
-                  style={{
-                    background: "white",
-                    borderRadius: "3px",
-                    padding: "8px",
-                    marginBottom: "8px",
-                    boxShadow: "0 1px 0 rgba(9,30,66,.25)",
-                  }}
-                >
-                  {card.title}
-                </div>
-              ))
-            ) : (
-              <p>Loading cards...</p>
-            )}
-          </div>
-
+          <h3>Add a new list</h3>
           <input
             type="text"
-            placeholder="New card title"
-            value={newCardTitles[list._id] || ""}
-            onChange={(e) =>
-              setNewCardTitles((prev) => ({
-                ...prev,
-                [list._id]: e.target.value,
-              }))
-            }
+            placeholder="List title"
+            value={newListTitle}
+            onChange={(e) => setNewListTitle(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
-                handleAddCard(list._id);
+                handleAddList();
               }
             }}
             style={{
               width: "100%",
               padding: "5px",
-              marginTop: "5px",
               boxSizing: "border-box",
             }}
           />
         </div>
-      ))}
-
-      {/* Add New List Column */}
-      <div
-        style={{
-          background: "#ebecf0",
-          borderRadius: "5px",
-          width: "250px",
-          padding: "10px",
-          minHeight: "50px",
-          flex: "0 0 auto",
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
-        <h3>Add a new list</h3>
-        <input
-          type="text"
-          placeholder="List title"
-          value={newListTitle}
-          onChange={(e) => setNewListTitle(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              handleAddList();
-            }
-          }}
-          style={{
-            width: "100%",
-            padding: "5px",
-            marginBottom: "5px",
-            boxSizing: "border-box",
-          }}
-        />
       </div>
     </div>
   </div>
 );
-
 
 }
