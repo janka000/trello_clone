@@ -1,16 +1,16 @@
 import React, { useState } from "react";
+import axios from "axios";
 
 export default function ListColumn({
   list,
   cards,
-  newCardTitle,
-  onCardTitleChange,
-  onAddCard,
   onCardClick,
-  onTitleUpdate, // <-- new prop for updating list title
+  onTitleUpdate,
+  refreshCardsForList, // optional: to fetch cards again after adding
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedTitle, setEditedTitle] = useState(list.title);
+  const [newCardTitle, setNewCardTitle] = useState("");
 
   const handleTitleSubmit = (e) => {
     if (e.key === "Enter") {
@@ -18,6 +18,33 @@ export default function ListColumn({
       if (editedTitle.trim() && editedTitle !== list.title) {
         onTitleUpdate(list._id, editedTitle.trim());
       }
+    }
+  };
+
+  const handleAddCard = async () => {
+    if (!newCardTitle.trim()) return;
+    try {
+      // 1. Create the card
+      const res = await axios.post("/api/cards", {
+        title: newCardTitle.trim(),
+        listId: list._id,
+      });
+      const newCard = res.data;
+
+      await axios.post("/api/cardinfos", {
+        cardId: newCard._id,
+        desc: "No description",
+      });
+
+      if (refreshCardsForList) {
+        refreshCardsForList(list._id);
+      } else {
+        cards.push(newCard);
+      }
+
+      setNewCardTitle("");
+    } catch (err) {
+      console.error("Error adding card:", err);
     }
   };
 
@@ -87,10 +114,10 @@ export default function ListColumn({
         type="text"
         placeholder="New card title"
         value={newCardTitle}
-        onChange={(e) => onCardTitleChange(e.target.value)}
+        onChange={(e) => setNewCardTitle(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === "Enter") {
-            onAddCard();
+            handleAddCard();
           }
         }}
         style={{
