@@ -94,6 +94,23 @@ export default function Board({ boardId }) {
     });
   };
 
+  const handleListDeleted = (listId) => {
+  setLists((prev) => prev.filter((list) => list._id !== listId));
+  setCards((prev) => {
+    const newCards = { ...prev };
+    delete newCards[listId];
+    return newCards;
+  });
+};
+
+const handleCardDeleted = (listId, cardId) => {
+  setCards((prev) => ({
+    ...prev,
+    [listId]: prev[listId].filter((card) => card._id !== cardId),
+  }));
+};
+
+
   const onDragEnd = async (result) => {
       const { source, destination, draggableId } = result;
 
@@ -152,7 +169,7 @@ export default function Board({ boardId }) {
   if (!board) return <p>Loading board...</p>;
 
 return (
-  <div style={{ height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+  <div style={{ height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden" , padding: "10px"}}>
     {/* Board Title */}
     {isEditingTitle ? (
       <input
@@ -212,6 +229,8 @@ return (
                         [listId]: [...(prev[listId] || []), newCard],
                       }));
                     }}
+                    onListDeleted={handleListDeleted}
+                    onCardDeleted={handleCardDeleted}
                   />
                   {provided.placeholder}
                 </div>

@@ -63,4 +63,25 @@ router.put('/:listId/reorder', async (req, res) => {
   }
 });
 
+router.delete("/:id", async (req, res) => {
+  try {
+    const listId = req.params.id;
+
+    // Delete all cards with this listId
+    await Card.deleteMany({ listId });
+
+    // Delete the list itself
+    const deletedList = await List.findByIdAndDelete(listId);
+
+    if (!deletedList) {
+      return res.status(404).json({ message: "List not found" });
+    }
+
+    res.status(200).json({ message: "List and its cards deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting list and cards:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 module.exports = router;

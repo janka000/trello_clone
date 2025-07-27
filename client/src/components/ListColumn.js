@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import axios from "axios";
 import { Draggable } from "react-beautiful-dnd";
+import ContextMenu from "./ContextMenu";
 
 export default function ListColumn({
   list,
@@ -9,13 +10,18 @@ export default function ListColumn({
   onTitleUpdate,
   refreshCardsForList,
   onCardAdded,
+  onListDeleted,
+  onCardDeleted,
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedTitle, setEditedTitle] = useState(list.title);
   const [newCardTitle, setNewCardTitle] = useState("");
   const [enableScroll, setEnableScroll] = useState(false);
 
+  const titleRef = useRef(null);
   const cardsContainerRef = useRef(null);
+  const [showListMenu, setShowListMenu] = useState(false);
+  const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     if (cardsContainerRef.current) {
@@ -23,6 +29,17 @@ export default function ListColumn({
       setEnableScroll(height > 200);
     }
   }, [cards]);
+
+  useEffect(() => {
+  const handleClickOutside = (e) => {
+    if (!titleRef.current) return; // <-- Fix here, prevents error
+    if (!titleRef.current.contains(e.target)) {
+      setShowListMenu(false);
+    }
+  };
+  document.addEventListener("click", handleClickOutside);
+  return () => document.removeEventListener("click", handleClickOutside);
+}, []);
 
   const handleTitleSubmit = (e) => {
     if (e.key === "Enter") {
@@ -47,11 +64,11 @@ export default function ListColumn({
         desc: "No description",
       });
 
-        if (onCardAdded) {
+      if (onCardAdded) {
         onCardAdded(list._id, newCard);
-        } else if (refreshCardsForList) {
+      } else if (refreshCardsForList) {
         refreshCardsForList(list._id);
-        }
+      }
 
       setNewCardTitle("");
     } catch (err) {
@@ -59,10 +76,22 @@ export default function ListColumn({
     }
   };
 
+  const handleDeleteList = async () => {
+  try {
+    await axios.delete(`/api/lists/${list._id}`);
+    if (onListDeleted) {
+      onListDeleted(list._id); // notify parent to remove list from UI
+    }
+    setShowListMenu(false);
+  } catch (error) {
+    console.error("Failed to delete list:", error);
+  }
+};
+
   return (
     <div
       className="bg-light rounded p-3 d-flex flex-column"
-      style={{ width: "250px", flex: "0 0 auto" }}
+      style={{ width: "250px", flex: "0 0 auto", position: "relative" }}
     >
       {isEditing ? (
         <input
@@ -76,10 +105,16 @@ export default function ListColumn({
         />
       ) : (
         <h5
+          ref={titleRef}
           onClick={() => setIsEditing(true)}
+          onContextMenu={(e) => {
+            e.preventDefault();
+            setMenuPosition({ x: e.clientX, y: e.clientY });
+            setShowListMenu(true);
+          }}
           className="mb-3"
           style={{ cursor: "pointer" }}
-          title="Click to edit"
+          title="Right-click for options"
         >
           {list.title}
         </h5>
@@ -93,32 +128,31 @@ export default function ListColumn({
           overflowY: enableScroll ? "auto" : "visible",
         }}
       >
-       {cards == null ? (
-        <p>Loading cards...</p>
+        {cards == null ? (
+          <p>Loading cards...</p>
         ) : cards.length > 0 ? (
-        cards.map((card, index) => (
+          cards.map((card, index) => (
             <Draggable key={card._id} draggableId={card._id} index={index}>
-            {(provided) => (
+              {(provided) => (
                 <div
-                ref={provided.innerRef}
-                {...provided.draggableProps}
-                {...provided.dragHandleProps}
-                onClick={() => onCardClick(card)}
-                className="card mb-2 shadow-sm"
-                style={{
+                  ref={provided.innerRef}
+                  {...provided.draggableProps}
+                  {...provided.dragHandleProps}
+                  onClick={() => onCardClick(card)}
+                  className="card mb-2 shadow-sm"
+                  style={{
                     cursor: "pointer",
                     ...provided.draggableProps.style,
-                }}
+                  }}
                 >
-                <div className="card-body p-2">{card.title}</div>
+                  <div className="card-body p-2">{card.title}</div>
                 </div>
-            )}
+              )}
             </Draggable>
-        ))
+          ))
         ) : (
-        <p>No cards yet</p>
+          <p>No cards yet</p>
         )}
-
       </div>
 
       <input
@@ -126,13 +160,23 @@ export default function ListColumn({
         placeholder="New card title"
         value={newCardTitle}
         onChange={(e) => setNewCardTitle(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            handleAddCard();
-          }
-        }}
+        onKeyDown={(e) => e.key === "Enter" && handleAddCard()}
         className="form-control"
       />
+
+      {/* Right-click menu for list title only */}
+      {showListMenu && (
+        <ContextMenu
+            position={menuPosition}
+            onClose={() => setShowListMenu(false)}
+            options={[
+            {
+                label: "Delete List",
+                onClick: handleDeleteList,
+            },
+            ]}
+        />
+        )}
     </div>
   );
 }
