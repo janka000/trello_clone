@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import axios from "axios";
 
 export default function ListColumn({
@@ -6,11 +6,21 @@ export default function ListColumn({
   cards,
   onCardClick,
   onTitleUpdate,
-  refreshCardsForList, // optional: to fetch cards again after adding
+  refreshCardsForList,
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedTitle, setEditedTitle] = useState(list.title);
   const [newCardTitle, setNewCardTitle] = useState("");
+  const [enableScroll, setEnableScroll] = useState(false);
+
+  const cardsContainerRef = useRef(null);
+
+  useEffect(() => {
+    if (cardsContainerRef.current) {
+      const height = cardsContainerRef.current.scrollHeight;
+      setEnableScroll(height > 200);
+    }
+  }, [cards]);
 
   const handleTitleSubmit = (e) => {
     if (e.key === "Enter") {
@@ -24,7 +34,6 @@ export default function ListColumn({
   const handleAddCard = async () => {
     if (!newCardTitle.trim()) return;
     try {
-      // 1. Create the card
       const res = await axios.post("/api/cards", {
         title: newCardTitle.trim(),
         listId: list._id,
@@ -50,16 +59,8 @@ export default function ListColumn({
 
   return (
     <div
-      style={{
-        background: "#f4f5f7",
-        borderRadius: "5px",
-        width: "250px",
-        padding: "10px",
-        flex: "0 0 auto",
-        display: "flex",
-        flexDirection: "column",
-        maxHeight: "300px",
-      }}
+      className="bg-light rounded p-3 d-flex flex-column"
+      style={{ width: "250px", flex: "0 0 auto" }}
     >
       {isEditing ? (
         <input
@@ -69,23 +70,25 @@ export default function ListColumn({
           onKeyDown={handleTitleSubmit}
           onBlur={() => setIsEditing(false)}
           autoFocus
-          style={{ marginBottom: "10px", padding: "4px", width: "100%" }}
+          className="form-control mb-2"
         />
       ) : (
-        <h3
+        <h5
           onClick={() => setIsEditing(true)}
-          style={{ cursor: "pointer", marginBottom: "10px" }}
+          className="mb-3"
+          style={{ cursor: "pointer" }}
+          title="Click to edit"
         >
           {list.title}
-        </h3>
+        </h5>
       )}
 
       <div
-        className="scrollable-list"
+        ref={cardsContainerRef}
+        className="flex-grow-1 mb-3 scroll-container"
         style={{
-          flexGrow: 1,
-          overflowY: "auto",
-          marginBottom: "10px",
+          maxHeight: "300px",
+          overflowY: enableScroll ? "auto" : "visible",
         }}
       >
         {cards ? (
@@ -93,16 +96,10 @@ export default function ListColumn({
             <div
               key={card._id}
               onClick={() => onCardClick(card)}
-              style={{
-                background: "white",
-                borderRadius: "3px",
-                padding: "8px",
-                marginBottom: "8px",
-                boxShadow: "0 1px 0 rgba(9,30,66,.25)",
-                cursor: "pointer",
-              }}
+              className="card mb-2 shadow-sm"
+              style={{ cursor: "pointer" }}
             >
-              {card.title}
+              <div className="card-body p-2">{card.title}</div>
             </div>
           ))
         ) : (
@@ -120,11 +117,7 @@ export default function ListColumn({
             handleAddCard();
           }
         }}
-        style={{
-          width: "100%",
-          padding: "5px",
-          boxSizing: "border-box",
-        }}
+        className="form-control"
       />
     </div>
   );

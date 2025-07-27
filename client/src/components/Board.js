@@ -30,22 +30,18 @@ export default function Board({ boardId }) {
     });
   }, [boardId]);
 
-
   const handleListTitleUpdate = async (listId, newTitle) => {
     try {
-        await axios.put(`/api/lists/${listId}`, {
-        title: newTitle,
-        });
-        setLists((prev) =>
+      await axios.put(`/api/lists/${listId}`, { title: newTitle });
+      setLists((prev) =>
         prev.map((list) =>
-            list._id === listId ? { ...list, title: newTitle } : list
+          list._id === listId ? { ...list, title: newTitle } : list
         )
-        );
+      );
     } catch (err) {
-        console.error("Error updating list title:", err);
+      console.error("Error updating list title:", err);
     }
-    };
-
+  };
 
   const handleAddList = async () => {
     if (!newListTitle.trim()) return;
@@ -64,9 +60,7 @@ export default function Board({ boardId }) {
     }
   };
 
-
   const handleBoardTitleKeyDown = async (e) => {
-    console.log("Key pressed:", e.key);
     if (e.key === "Enter") {
       try {
         const res = await axios.put(`api/boards/${boardId}`, {
@@ -80,12 +74,23 @@ export default function Board({ boardId }) {
     }
   };
 
+  const handleCardUpdate = (updatedCard) => {
+    setCards((prev) => {
+      const newCards = {};
+      for (const listId in prev) {
+        newCards[listId] = prev[listId].map((card) =>
+          card._id === updatedCard._id ? updatedCard : card
+        );
+      }
+      return newCards;
+    });
+  };
 
   if (!board) return <p>Loading board...</p>;
 
   return (
-    <div style={{ padding: "20px" }}>
-      {/* Title area */}
+    <div className="container py-4">
+      {/* Board Title */}
       {isEditingTitle ? (
         <input
           autoFocus
@@ -93,69 +98,49 @@ export default function Board({ boardId }) {
           value={editedTitle}
           onChange={(e) => setEditedTitle(e.target.value)}
           onKeyDown={handleBoardTitleKeyDown}
-          onBlur={() => setIsEditingTitle(false)} // optional: exit on blur
-          style={{
-            fontSize: "2rem",
-            fontWeight: "bold",
-            padding: "5px",
-            width: "100%",
-            maxWidth: "500px",
-          }}
+          onBlur={() => setIsEditingTitle(false)}
+          className="form-control form-control-lg fw-bold mb-3"
+          style={{ maxWidth: "600px" }}
         />
       ) : (
         <h1
-          onClick={() => setIsEditingTitle(true)}
+          className="mb-4"
           style={{ cursor: "pointer" }}
+          onClick={() => setIsEditingTitle(true)}
+          title="Click to edit"
         >
           {board.title}
         </h1>
       )}
 
+      {/* Lists Container */}
       <div
-        className="scroll-container"
-        style={{
-          overflowX: "auto",
-          marginTop: "20px",
-          padding: "10px",
-        }}
+        className="d-flex flex-row flex-nowrap overflow-auto"
+        style={{ gap: "20px", minHeight: "400px" }}
       >
-        <div
-          style={{
-            display: "flex",
-            gap: "20px",
-            flexWrap: "nowrap",
-            minHeight: "400px",
-          }}
-        >
-          {lists.map((list) => (
-            <ListColumn
-              key={list._id}
-              list={list}
-              cards={cards[list._id]}
-              onCardCreated={(listId, newCard) => {
-                setCards((prev) => ({
-                  ...prev,
-                  [listId]: [...(prev[listId] || []), newCard],
-                }));
-              }}
-              onTitleUpdate={handleListTitleUpdate}
-              onCardClick={(card) => setSelectedCard(card)}
-            />
-          ))}
-
-          <AddListColumn
-            newListTitle={newListTitle}
-            onChange={setNewListTitle}
-            onAddList={handleAddList}
+        {lists.map((list) => (
+          <ListColumn
+            key={list._id}
+            list={list}
+            cards={cards[list._id]}
+            onTitleUpdate={handleListTitleUpdate}
+            onCardClick={(card) => setSelectedCard(card)}
           />
-        </div>
+        ))}
+
+        <AddListColumn
+          newListTitle={newListTitle}
+          onChange={setNewListTitle}
+          onAddList={handleAddList}
+        />
       </div>
 
-        <CardModal 
-        card={selectedCard} 
-        onClose={() => setSelectedCard(null)} 
-        />
-
+      {/* Card Modal */}
+      <CardModal
+        card={selectedCard}
+        onClose={() => setSelectedCard(null)}
+        onCardUpdate={handleCardUpdate}
+      />
     </div>
   );
 }

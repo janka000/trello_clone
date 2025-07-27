@@ -26,4 +26,26 @@ router.get('/', async (req, res) => {
   }
 });
 
+
+// Update card by ID
+router.put('/:cardId', async (req, res) => {
+  try {
+    const updatedCard = await Card.findByIdAndUpdate(
+      req.params.cardId,
+      req.body,           // expects updated fields in req.body
+      { new: true }       // return the updated document
+    );
+
+    if (!updatedCard) {
+      return res.status(404).json({ message: 'Card not found' });
+    }
+
+    res.json(updatedCard);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+
 module.exports = router;

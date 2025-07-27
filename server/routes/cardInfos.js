@@ -35,4 +35,28 @@ router.get('/', async (req, res) => {
   }
 });
 
+// PUT /api/cardinfos/:cardId
+router.put('/:cardId', async (req, res) => {
+  const { cardId } = req.params;
+  const { desc } = req.body;
+
+  if (typeof desc !== 'string') {
+    return res.status(400).json({ message: 'Description must be a string.' });
+  }
+
+  try {
+    const updatedCardInfo = await CardInfo.findOneAndUpdate(
+      { cardId },         // Assuming you store the card reference as `cardId`
+      { desc },
+      { new: true, upsert: true } // creates if doesn't exist, returns new doc
+    );
+
+    res.json(updatedCardInfo);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Failed to update description.' });
+  }
+});
+
+
 module.exports = router;

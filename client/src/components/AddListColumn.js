@@ -3,18 +3,10 @@ import React from "react";
 export default function AddListColumn({ newListTitle, onChange, onAddList }) {
   return (
     <div
-      style={{
-        background: "#ebecf0",
-        borderRadius: "5px",
-        width: "250px",
-        padding: "10px",
-        flex: "0 0 auto",
-        display: "flex",
-        flexDirection: "column",
-        maxHeight: "300px",
-      }}
+      className="bg-light rounded p-3 d-flex flex-column"
+      style={{ width: "250px", flex: "0 0 auto", maxHeight: "300px" }}
     >
-      <h3>Add a new list</h3>
+      <h5 className="mb-3">Add a new list</h5>
       <input
         type="text"
         placeholder="List title"
@@ -25,12 +17,16 @@ export default function AddListColumn({ newListTitle, onChange, onAddList }) {
             onAddList();
           }
         }}
-        style={{
-          width: "100%",
-          padding: "5px",
-          boxSizing: "border-box",
-        }}
+        className="form-control"
+        autoFocus
       />
+      <button
+        className="btn btn-primary mt-3"
+        onClick={onAddList}
+        disabled={!newListTitle.trim()}
+      >
+        Add List
+      </button>
     </div>
   );
 }
