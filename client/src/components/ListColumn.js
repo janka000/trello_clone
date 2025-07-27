@@ -23,6 +23,10 @@ export default function ListColumn({
   const [showListMenu, setShowListMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
 
+  const [showCardMenu, setShowCardMenu] = useState(false);
+  const [cardMenuPosition, setCardMenuPosition] = useState({ x: 0, y: 0 });
+  const [selectedCardId, setSelectedCardId] = useState(null);
+
   useEffect(() => {
     if (cardsContainerRef.current) {
       const height = cardsContainerRef.current.scrollHeight;
@@ -32,11 +36,15 @@ export default function ListColumn({
 
   useEffect(() => {
   const handleClickOutside = (e) => {
-    if (!titleRef.current) return; // <-- Fix here, prevents error
-    if (!titleRef.current.contains(e.target)) {
+    // Close list menu if click is outside titleRef
+    if (titleRef.current && !titleRef.current.contains(e.target)) {
       setShowListMenu(false);
     }
+
+    // Always close card menu (it appears anywhere, so general click outside should close it)
+    setShowCardMenu(false);
   };
+
   document.addEventListener("click", handleClickOutside);
   return () => document.removeEventListener("click", handleClickOutside);
 }, []);
@@ -88,6 +96,18 @@ export default function ListColumn({
   }
 };
 
+ const handleDeleteCard = async () => {
+  try {
+    await axios.delete(`/api/cards/${selectedCardId}`);
+    if (onCardDeleted) {
+      onCardDeleted(list._id, selectedCardId); // notify parent
+    }
+    setShowCardMenu(false);
+  } catch (error) {
+    console.error("Failed to delete card:", error);
+  }
+};
+
   return (
     <div
       className="bg-light rounded p-3 d-flex flex-column"
@@ -129,30 +149,37 @@ export default function ListColumn({
         }}
       >
         {cards == null ? (
-          <p>Loading cards...</p>
-        ) : cards.length > 0 ? (
-          cards.map((card, index) => (
-            <Draggable key={card._id} draggableId={card._id} index={index}>
-              {(provided) => (
-                <div
-                  ref={provided.innerRef}
-                  {...provided.draggableProps}
-                  {...provided.dragHandleProps}
-                  onClick={() => onCardClick(card)}
-                  className="card mb-2 shadow-sm"
-                  style={{
-                    cursor: "pointer",
-                    ...provided.draggableProps.style,
-                  }}
-                >
-                  <div className="card-body p-2">{card.title}</div>
-                </div>
-              )}
-            </Draggable>
-          ))
-        ) : (
-          <p>No cards yet</p>
-        )}
+            <p>Loading cards...</p>
+            ) : cards.length > 0 ? (
+            cards.map((card, index) => (
+                <Draggable key={card._id} draggableId={card._id} index={index}>
+                {(provided) => (
+                    <div
+                    ref={provided.innerRef}
+                    {...provided.draggableProps}
+                    {...provided.dragHandleProps}
+                    onClick={() => onCardClick(card)}
+                    onContextMenu={(e) => {
+                        e.preventDefault();
+                        setSelectedCardId(card._id);
+                        setCardMenuPosition({ x: e.clientX, y: e.clientY });
+                        setShowCardMenu(true);
+                    }}
+                    className="card mb-2 shadow-sm"
+                    style={{
+                        cursor: "pointer",
+                        ...provided.draggableProps.style,
+                    }}
+                    >
+                    <div className="card-body p-2">{card.title}</div>
+                    </div>
+                )}
+                </Draggable>
+            ))
+            ) : (
+            <p>No cards yet</p>
+            )}
+
       </div>
 
       <input
@@ -177,6 +204,19 @@ export default function ListColumn({
             ]}
         />
         )}
+            {showCardMenu && (
+        <ContextMenu
+            position={cardMenuPosition}
+            onClose={() => setShowCardMenu(false)}
+            options={[
+            {
+                label: "Delete Card",
+                onClick: handleDeleteCard,
+            },
+            ]}
+        />
+        )}
+
     </div>
   );
 }

@@ -26,6 +26,17 @@ router.get('/', async (req, res) => {
   }
 });
 
+router.delete("/:id", async (req, res) => {
+  try {
+    const deletedCard = await Card.findByIdAndDelete(req.params.id);
+    if (!deletedCard) return res.status(404).json({ message: "Card not found" });
+    res.status(200).json({ message: "Card deleted" });
+  } catch (err) {
+    console.error("Error deleting card:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 
 // Update card by ID
 router.put('/:cardId', async (req, res) => {
