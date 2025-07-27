@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import axios from "axios";
-import { Draggable } from "react-beautiful-dnd";
+import { Draggable, Droppable } from "react-beautiful-dnd";
 import ContextMenu from "./ContextMenu";
 
 export default function ListColumn({
@@ -12,6 +12,7 @@ export default function ListColumn({
   onCardAdded,
   onListDeleted,
   onCardDeleted,
+  dragHandleProps
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedTitle, setEditedTitle] = useState(list.title);
@@ -109,115 +110,125 @@ export default function ListColumn({
 };
 
   return (
-    <div
-      className="bg-light rounded p-3 d-flex flex-column"
-      style={{ width: "250px", flex: "0 0 auto", position: "relative" }}
-    >
-      {isEditing ? (
-        <input
-          type="text"
-          value={editedTitle}
-          onChange={(e) => setEditedTitle(e.target.value)}
-          onKeyDown={handleTitleSubmit}
-          onBlur={() => setIsEditing(false)}
-          autoFocus
-          className="form-control mb-2"
-        />
-      ) : (
-        <h5
-          ref={titleRef}
-          onClick={() => setIsEditing(true)}
-          onContextMenu={(e) => {
-            e.preventDefault();
-            setMenuPosition({ x: e.clientX, y: e.clientY });
-            setShowListMenu(true);
-          }}
-          className="mb-3"
-          style={{ cursor: "pointer" }}
-          title="Right-click for options"
-        >
-          {list.title}
-        </h5>
-      )}
-
-      <div
-        ref={cardsContainerRef}
-        className="flex-grow-1 mb-3 scroll-container"
-        style={{
-          maxHeight: "300px",
-          overflowY: enableScroll ? "auto" : "visible",
+  <div
+    className="bg-light rounded p-3 d-flex flex-column"
+    style={{ width: "250px", flex: "0 0 auto", position: "relative" }}
+  >
+    {isEditing ? (
+      <input
+        type="text"
+        value={editedTitle}
+        onChange={(e) => setEditedTitle(e.target.value)}
+        onKeyDown={handleTitleSubmit}
+        onBlur={() => setIsEditing(false)}
+        autoFocus
+        className="form-control mb-2"
+      />
+    ) : (
+      <h5
+        ref={titleRef}
+        onClick={() => setIsEditing(true)}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          setMenuPosition({ x: e.clientX, y: e.clientY });
+          setShowListMenu(true);
         }}
+        className="mb-3"
+        style={{ cursor: "pointer" }}
+        title="Right-click for options"
+        {...dragHandleProps} // only drag list by title
       >
-        {cards == null ? (
+        {list.title}
+      </h5>
+    )}
+
+    {/* DROPPABLE AREA FOR CARDS */}
+    <Droppable droppableId={list._id} type="CARD">
+      {(provided) => (
+        <div
+          ref={(node) => {
+            cardsContainerRef.current = node;
+            provided.innerRef(node); // combine both refs
+          }}
+          {...provided.droppableProps}
+          className="flex-grow-1 mb-3 scroll-container"
+          style={{
+            maxHeight: "300px",
+            overflowY: enableScroll ? "auto" : "visible",
+          }}
+        >
+          {cards == null ? (
             <p>Loading cards...</p>
-            ) : cards.length > 0 ? (
+          ) : cards.length > 0 ? (
             cards.map((card, index) => (
-                <Draggable key={card._id} draggableId={card._id} index={index}>
-                {(provided) => (
-                    <div
+              <Draggable key={card._id} draggableId={card._id} index={index}>
+                {(provided, snapshot) => (
+                  <div
                     ref={provided.innerRef}
                     {...provided.draggableProps}
-                    {...provided.dragHandleProps}
+                    {...provided.dragHandleProps} // allow dragging card
                     onClick={() => onCardClick(card)}
                     onContextMenu={(e) => {
-                        e.preventDefault();
-                        setSelectedCardId(card._id);
-                        setCardMenuPosition({ x: e.clientX, y: e.clientY });
-                        setShowCardMenu(true);
+                      e.preventDefault();
+                      setSelectedCardId(card._id);
+                      setCardMenuPosition({ x: e.clientX, y: e.clientY });
+                      setShowCardMenu(true);
                     }}
                     className="card mb-2 shadow-sm"
                     style={{
                         cursor: "pointer",
                         ...provided.draggableProps.style,
                     }}
-                    >
+                  >
                     <div className="card-body p-2">{card.title}</div>
-                    </div>
+                  </div>
                 )}
-                </Draggable>
+              </Draggable>
             ))
-            ) : (
+          ) : (
             <p>No cards yet</p>
-            )}
+          )}
+          {provided.placeholder}
+        </div>
+      )}
+    </Droppable>
 
-      </div>
+    <input
+      type="text"
+      placeholder="New card title"
+      value={newCardTitle}
+      onChange={(e) => setNewCardTitle(e.target.value)}
+      onKeyDown={(e) => e.key === "Enter" && handleAddCard()}
+      className="form-control"
+    />
 
-      <input
-        type="text"
-        placeholder="New card title"
-        value={newCardTitle}
-        onChange={(e) => setNewCardTitle(e.target.value)}
-        onKeyDown={(e) => e.key === "Enter" && handleAddCard()}
-        className="form-control"
+    {/* Right-click menu for list title only */}
+    {showListMenu && (
+      <ContextMenu
+        position={menuPosition}
+        onClose={() => setShowListMenu(false)}
+        options={[
+          {
+            label: "Delete List",
+            onClick: handleDeleteList,
+          },
+        ]}
       />
+    )}
 
-      {/* Right-click menu for list title only */}
-      {showListMenu && (
-        <ContextMenu
-            position={menuPosition}
-            onClose={() => setShowListMenu(false)}
-            options={[
-            {
-                label: "Delete List",
-                onClick: handleDeleteList,
-            },
-            ]}
-        />
-        )}
-        {/* Right-click menu for cards */}
-            {showCardMenu && (
-        <ContextMenu
-            position={cardMenuPosition}
-            onClose={() => setShowCardMenu(false)}
-            options={[
-            {
-                label: "Delete Card",
-                onClick: handleDeleteCard,
-            },
-            ]}
-        />
-        )}
-
-    </div>
-  );
+    {/* Right-click menu for cards */}
+    {showCardMenu && (
+      <ContextMenu
+        position={cardMenuPosition}
+        onClose={() => setShowCardMenu(false)}
+        options={[
+          {
+            label: "Delete Card",
+            onClick: handleDeleteCard,
+          },
+        ]}
+      />
+    )}
+  </div>
+);
 }

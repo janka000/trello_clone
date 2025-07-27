@@ -3,7 +3,7 @@ import axios from "axios";
 import ListColumn from "./ListColumn";
 import AddListColumn from "./AddListColumn";
 import CardModal from "./cardModal";
-import { DragDropContext, Droppable } from "react-beautiful-dnd";
+import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 
 export default function Board({ boardId }) {
   const [board, setBoard] = useState(null);
@@ -24,16 +24,17 @@ export default function Board({ boardId }) {
 
 
     axios.get(`/api/lists/${boardId}`).then((res) => {
-      setLists(res.data);
-      res.data.forEach((list) => {
-        res.data.forEach((list) => {
-          axios.get(`/api/cards/${list._id}`).then((res) => {
-            const sortedCards = res.data.sort((a, b) => a.order - b.order);
-            setCards((prev) => ({ ...prev, [list._id]: sortedCards }));
-          });
+      const sortedLists = res.data.sort((a, b) => a.order - b.order); // sort lists here
+      setLists(sortedLists);
+
+      sortedLists.forEach((list) => {
+        axios.get(`/api/cards/${list._id}`).then((res) => {
+          const sortedCards = res.data.sort((a, b) => a.order - b.order);
+          setCards((prev) => ({ ...prev, [list._id]: sortedCards }));
         });
       });
     });
+
   }, [boardId]);
 
   const handleListTitleUpdate = async (listId, newTitle) => {
@@ -112,59 +113,76 @@ const handleCardDeleted = (listId, cardId) => {
 
 
   const onDragEnd = async (result) => {
-      const { source, destination, draggableId } = result;
+    const { source, destination, draggableId, type } = result;
 
-      if (!destination) return;
+    if (!destination) return;
 
-      if (
-        source.droppableId === destination.droppableId &&
-        source.index === destination.index
-      )
-        return;
+    if (
+      source.droppableId === destination.droppableId &&
+      source.index === destination.index
+    )
+      return;
 
-      if (source.droppableId === destination.droppableId) {
-        // Reorder within the same list
-        const listId = source.droppableId;
-        const newCards = Array.from(cards[listId]);
-        const [movedCard] = newCards.splice(source.index, 1);
-        newCards.splice(destination.index, 0, movedCard);
+    // list Reordering
+    if (type === "LIST") {
+      const reorderedLists = Array.from(lists);
+      const [movedList] = reorderedLists.splice(source.index, 1);
+      reorderedLists.splice(destination.index, 0, movedList);
 
-        setCards((prev) => ({ ...prev, [listId]: newCards }));
+      setLists(reorderedLists);
 
-        // Persist reorder
-        const cardOrder = newCards.map((card) => card._id);
-        await axios.put(`/api/lists/${listId}/reorder`, { cardOrder });
-
-      } else {
-        // Move card between lists
-        const sourceListId = source.droppableId;
-        const destListId = destination.droppableId;
-
-        const sourceCards = Array.from(cards[sourceListId]);
-        const destCards = Array.from(cards[destListId]);
-        const [movedCard] = sourceCards.splice(source.index, 1);
-
-        const updatedMovedCard = { ...movedCard, listId: destListId };
-        destCards.splice(destination.index, 0, updatedMovedCard);
-
-        setCards((prev) => ({
-          ...prev,
-          [sourceListId]: sourceCards,
-          [destListId]: destCards,
-        }));
-
-        // Prepare arrays of IDs to update orders
-        const sourceOrder = sourceCards.map((card) => card._id);
-        const destinationOrder = destCards.map((card) => card._id);
-
-        // Persist move and reorder
-        await axios.put(`/api/cards/${movedCard._id}/move`, {
-          destinationListId: destListId,
-          destinationOrder,
-          sourceOrder,
+      // Send new order to server
+      const listOrder = reorderedLists.map((list) => list._id);
+      try {
+        await axios.put(`/api/boards/${boardId}/reorder-lists`, {
+          listOrder,
         });
+      } catch (err) {
+        console.error("Failed to reorder lists", err);
       }
-    };
+
+      return;
+    }
+
+    // Card Reordering (same as before)
+    if (source.droppableId === destination.droppableId) {
+      const listId = source.droppableId;
+      const newCards = Array.from(cards[listId]);
+      const [movedCard] = newCards.splice(source.index, 1);
+      newCards.splice(destination.index, 0, movedCard);
+
+      setCards((prev) => ({ ...prev, [listId]: newCards }));
+
+      const cardOrder = newCards.map((card) => card._id);
+      await axios.put(`/api/lists/${listId}/reorder`, { cardOrder });
+    } else {
+      const sourceListId = source.droppableId;
+      const destListId = destination.droppableId;
+
+      const sourceCards = Array.from(cards[sourceListId]);
+      const destCards = Array.from(cards[destListId]);
+      const [movedCard] = sourceCards.splice(source.index, 1);
+
+      const updatedMovedCard = { ...movedCard, listId: destListId };
+      destCards.splice(destination.index, 0, updatedMovedCard);
+
+      setCards((prev) => ({
+        ...prev,
+        [sourceListId]: sourceCards,
+        [destListId]: destCards,
+      }));
+
+      const sourceOrder = sourceCards.map((card) => card._id);
+      const destinationOrder = destCards.map((card) => card._id);
+
+      await axios.put(`/api/cards/${movedCard._id}/move`, {
+        destinationListId: destListId,
+        destinationOrder,
+        sourceOrder,
+      });
+    }
+  };
+
 
   if (!board) return <p>Loading board...</p>;
 
@@ -199,26 +217,36 @@ return (
     {/* Lists Container */}
     <DragDropContext onDragEnd={onDragEnd}>
       <div style={{ flexGrow: 1, overflowX: "auto" }}>
-        <div
-          className="scroll-container"
-          style={{
-            padding: "10px 20px",
-            display: "flex",
-            gap: "20px",
-            flexWrap: "nowrap",
-            height: "100%",
-          }}
-        >
-          {lists.map((list) => (
-            <Droppable droppableId={list._id} key={list._id}>
+        <Droppable
+        droppableId="lists"
+        direction="horizontal"
+        type="LIST"
+      >
+        {(provided) => (
+          <div
+            ref={provided.innerRef}
+            {...provided.droppableProps}
+            className="scroll-container"
+            style={{
+              padding: "10px 20px",
+              display: "flex",
+              gap: "20px",
+              flexWrap: "nowrap",
+              height: "100%",
+            }}
+          >
+            {lists.map((list, index) => (
+              <Draggable draggableId={list._id} index={index} key={list._id}>
               {(provided) => (
                 <div
                   ref={provided.innerRef}
-                  {...provided.droppableProps}
-                  style={{ minWidth: "250px" }}
+                  {...provided.draggableProps} // ✅ Only draggableProps here
+                  style={{
+                    minWidth: "250px",
+                    ...provided.draggableProps.style,
+                  }}
                 >
                   <ListColumn
-                    key={list._id}
                     list={list}
                     cards={cards[list._id]}
                     onCardClick={(card) => setSelectedCard(card)}
@@ -231,19 +259,23 @@ return (
                     }}
                     onListDeleted={handleListDeleted}
                     onCardDeleted={handleCardDeleted}
+                    dragHandleProps={provided.dragHandleProps} // ✅ Pass drag handle only
                   />
-                  {provided.placeholder}
                 </div>
               )}
-            </Droppable>
-          ))}
+            </Draggable>
+            ))}
+            {provided.placeholder}
 
-          <AddListColumn
-            newListTitle={newListTitle}
-            onChange={setNewListTitle}
-            onAddList={handleAddList}
-          />
-        </div>
+            <AddListColumn
+              newListTitle={newListTitle}
+              onChange={setNewListTitle}
+              onAddList={handleAddList}
+            />
+          </div>
+        )}
+      </Droppable>
+
       </div>
     </DragDropContext>
 
