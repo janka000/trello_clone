@@ -27,3 +27,11 @@ use trello_clone
 db.boards.insertOne({ title: "Test Board" })
 db.boards.find().pretty()
 
+######################
+start:
+
+in server directory: node index.js
+in client directory: npm start
+mongodb? 
+sudo systemctl start mongod
+sudo systemctl enable mongod

@@ -204,6 +204,7 @@ export default function ListColumn({
             ]}
         />
         )}
+        {/* Right-click menu for cards */}
             {showCardMenu && (
         <ContextMenu
             position={cardMenuPosition}

@@ -18,7 +18,6 @@ export default function AddListColumn({ newListTitle, onChange, onAddList }) {
           }
         }}
         className="form-control"
-        autoFocus
       />
       <button
         className="btn btn-primary mt-3"
