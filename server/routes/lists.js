@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const List = require('../models/List');
+const Card = require('../models/Card');
 
 // Get lists by boardId
 router.get('/:boardId', async (req, res) => {
@@ -45,5 +46,21 @@ router.put('/:id', async (req, res) => {
     }
 });
 
+// Reorder cards within the same list
+router.put('/:listId/reorder', async (req, res) => {
+  const { listId } = req.params;
+  const { cardOrder } = req.body; // Array of card IDs in the new order
+
+  try {
+    // Update each card with its new position
+    for (let i = 0; i < cardOrder.length; i++) {
+      await Card.findByIdAndUpdate(cardOrder[i], { order: i });
+    }
+    res.sendStatus(200);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to reorder cards" });
+  }
+});
 
 module.exports = router;

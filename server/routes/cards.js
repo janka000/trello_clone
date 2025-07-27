@@ -4,7 +4,7 @@ const Card = require('../models/Card');
 
 // Get cards by listId
 router.get('/:listId', async (req, res) => {
-  const cards = await Card.find({ listId: req.params.listId });
+  const cards = await Card.find({ listId: req.params.listId }).sort({ order: 1 }); // ✅ Sort by order
   res.json(cards);
 });
 
@@ -46,6 +46,39 @@ router.put('/:cardId', async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
+
+// Move card between lists and reorder
+router.put('/:cardId/move', async (req, res) => {
+  const { cardId } = req.params;
+  const { destinationListId, destinationOrder, sourceOrder } = req.body;
+
+  try {
+    // Find the index of the moved card in the destination order array
+    const newOrderIndex = destinationOrder.indexOf(cardId);
+
+    // Update moved card's listId and order
+    await Card.findByIdAndUpdate(cardId, {
+      listId: destinationListId,
+      order: newOrderIndex,
+    });
+
+    // Adjust order for cards in source list
+    for (let i = 0; i < sourceOrder.length; i++) {
+      await Card.findByIdAndUpdate(sourceOrder[i], { order: i });
+    }
+
+    // Adjust order for cards in destination list
+    for (let i = 0; i < destinationOrder.length; i++) {
+      await Card.findByIdAndUpdate(destinationOrder[i], { order: i });
+    }
+
+    res.sendStatus(200);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to move card" });
+  }
+});
+
 
 
 module.exports = router;

@@ -1,12 +1,14 @@
 import React, { useState, useRef, useEffect } from "react";
 import axios from "axios";
+import { Draggable } from "react-beautiful-dnd";
 
 export default function ListColumn({
   list,
-  cards,
+  cards = [],
   onCardClick,
   onTitleUpdate,
   refreshCardsForList,
+  onCardAdded,
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedTitle, setEditedTitle] = useState(list.title);
@@ -45,11 +47,11 @@ export default function ListColumn({
         desc: "No description",
       });
 
-      if (refreshCardsForList) {
+        if (onCardAdded) {
+        onCardAdded(list._id, newCard);
+        } else if (refreshCardsForList) {
         refreshCardsForList(list._id);
-      } else {
-        cards.push(newCard);
-      }
+        }
 
       setNewCardTitle("");
     } catch (err) {
@@ -91,20 +93,32 @@ export default function ListColumn({
           overflowY: enableScroll ? "auto" : "visible",
         }}
       >
-        {cards ? (
-          cards.map((card) => (
-            <div
-              key={card._id}
-              onClick={() => onCardClick(card)}
-              className="card mb-2 shadow-sm"
-              style={{ cursor: "pointer" }}
-            >
-              <div className="card-body p-2">{card.title}</div>
-            </div>
-          ))
+       {cards == null ? (
+        <p>Loading cards...</p>
+        ) : cards.length > 0 ? (
+        cards.map((card, index) => (
+            <Draggable key={card._id} draggableId={card._id} index={index}>
+            {(provided) => (
+                <div
+                ref={provided.innerRef}
+                {...provided.draggableProps}
+                {...provided.dragHandleProps}
+                onClick={() => onCardClick(card)}
+                className="card mb-2 shadow-sm"
+                style={{
+                    cursor: "pointer",
+                    ...provided.draggableProps.style,
+                }}
+                >
+                <div className="card-body p-2">{card.title}</div>
+                </div>
+            )}
+            </Draggable>
+        ))
         ) : (
-          <p>Loading cards...</p>
+        <p>No cards yet</p>
         )}
+
       </div>
 
       <input
