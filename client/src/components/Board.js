@@ -149,51 +149,47 @@ export default function Board({ boardId }) {
       }
     };
 
-
-
-
   if (!board) return <p>Loading board...</p>;
 
-  return (
-    <div style={{ padding: "20px" }}>
-      {/* Board Title */}
-      {isEditingTitle ? (
-        <input
-          autoFocus
-          type="text"
-          value={editedTitle}
-          onChange={(e) => setEditedTitle(e.target.value)}
-          onKeyDown={handleBoardTitleKeyDown}
-          onBlur={() => setIsEditingTitle(false)}
-          style={{
-            fontSize: "2rem",
-            fontWeight: "bold",
-            padding: "5px",
-            width: "100%",
-            maxWidth: "500px",
-          }}
-        />
-      ) : (
-        <h1
-          onClick={() => setIsEditingTitle(true)}
-          style={{ cursor: "pointer" }}
-        >
-          {board.title}
-        </h1>
-      )}
+return (
+  <div style={{ height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+    {/* Board Title */}
+    {isEditingTitle ? (
+      <input
+        autoFocus
+        type="text"
+        value={editedTitle}
+        onChange={(e) => setEditedTitle(e.target.value)}
+        onKeyDown={handleBoardTitleKeyDown}
+        onBlur={() => setIsEditingTitle(false)}
+        style={{
+          fontSize: "2rem",
+          fontWeight: "bold",
+          padding: "5px 20px",
+          width: "100%",
+          maxWidth: "500px",
+        }}
+      />
+    ) : (
+      <h1
+        onClick={() => setIsEditingTitle(true)}
+        style={{ cursor: "pointer", padding: "20px" }}
+      >
+        {board.title}
+      </h1>
+    )}
 
-      {/* Lists Container */}
-      <DragDropContext onDragEnd={onDragEnd}>
+    {/* Lists Container */}
+    <DragDropContext onDragEnd={onDragEnd}>
+      <div style={{ flexGrow: 1, overflowX: "auto" }}>
         <div
           className="scroll-container"
           style={{
-            overflowX: "auto",
-            marginTop: "20px",
-            padding: "10px",
+            padding: "10px 20px",
             display: "flex",
             gap: "20px",
             flexWrap: "nowrap",
-            minHeight: "400px",
+            height: "100%",
           }}
         >
           {lists.map((list) => (
@@ -229,14 +225,15 @@ export default function Board({ boardId }) {
             onAddList={handleAddList}
           />
         </div>
-      </DragDropContext>
+      </div>
+    </DragDropContext>
 
-      {/* Card Modal */}
-      <CardModal
-        card={selectedCard}
-        onClose={() => setSelectedCard(null)}
-        onCardUpdate={handleCardUpdate}
-      />
-    </div>
-  );
+    {/* Card Modal */}
+    <CardModal
+      card={selectedCard}
+      onClose={() => setSelectedCard(null)}
+      onCardUpdate={handleCardUpdate}
+    />
+  </div>
+);
 }
